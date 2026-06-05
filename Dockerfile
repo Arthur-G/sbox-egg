@@ -42,10 +42,15 @@ RUN mkdir -p /etc/apt/keyrings \
  && rm -rf /var/lib/apt/lists/*
 
 # --- SteamCMD (Valve tarball — NOT the broken Debian package bootstrap) ------
+# The tarball ships steamcmd.sh + a linux32/steamcmd bootstrap. steamcmd.sh
+# execs that binary directly, so it must be +x; and SteamCMD self-updates by
+# writing back into its own dir on first run, so the dir must be writable by
+# the (non-root) container user — ownership is fixed after useradd below.
 RUN mkdir -p "${STEAMCMD_DIR}" \
  && curl -sSL https://steamcdn-a.akamaihd.net/client/installer/steamcmd_linux.tar.gz \
       | tar zxf - -C "${STEAMCMD_DIR}" \
- && chmod +x "${STEAMCMD_DIR}/steamcmd.sh"
+ && chmod +x "${STEAMCMD_DIR}/steamcmd.sh" \
+ && find "${STEAMCMD_DIR}" -type f -name steamcmd -exec chmod +x {} +
 
 # --- .NET (Windows x64) for wine --------------------------------------------
 # Exposed to wine as Z:\opt\sbox-dotnet via DOTNET_ROOT in start-sbox.
@@ -56,7 +61,10 @@ RUN curl -sSL -o /tmp/dotnet.zip \
  && rm -f /tmp/dotnet.zip
 
 # --- Pterodactyl container user ---------------------------------------------
-RUN useradd -m -d /home/container -s /bin/bash container
+# SteamCMD self-updates into ${STEAMCMD_DIR} at runtime, so the dir must be
+# owned by the user we run as (otherwise: "linux32/steamcmd: Permission denied").
+RUN useradd -m -d /home/container -s /bin/bash container \
+ && chown -R container:container "${STEAMCMD_DIR}"
 ENV USER=container HOME=/home/container
 
 # --- scripts ----------------------------------------------------------------
