@@ -14,7 +14,7 @@ Elle remplace l'image tierce `ghcr.io/gameforgegg/sbox-egg` pour deux raisons :
 
 > Contexte complet, diagnostic et décisions : voir [`CONTEXT.md`](CONTEXT.md).
 
-**Image publiée :** `ghcr.io/ouiheberg/sbox-egg:latest`
+**Image publiée :** `ghcr.io/arthur-g/sbox-egg:latest`
 
 ## Contenu du repo
 
@@ -30,12 +30,12 @@ Elle remplace l'image tierce `ghcr.io/gameforgegg/sbox-egg` pour deux raisons :
 ## Build & publication
 
 Le push sur `main` déclenche le workflow GitHub Actions qui build et pousse
-`ghcr.io/ouiheberg/sbox-egg:latest` (via le `GITHUB_TOKEN` natif, aucun PAT).
+`ghcr.io/arthur-g/sbox-egg:latest` (via le `GITHUB_TOKEN` natif, aucun PAT).
 
 Build local (optionnel) :
 
 ```bash
-docker build -t ghcr.io/ouiheberg/sbox-egg:latest .
+docker build -t ghcr.io/arthur-g/sbox-egg:latest .
 ```
 
 Puis importer `egg-s-box-ouiheberg.json` dans Pterodactyl et faire un **Reinstall** sur le

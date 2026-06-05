@@ -2,7 +2,7 @@ name: build-and-push
 
 # Build the s&box Debian/Wine image and push it to GHCR.
 # Auth uses the repo's native GITHUB_TOKEN (no PAT). The package is created
-# under the same owner as the repo (ghcr.io/ouiheberg/sbox-egg).
+# under the same owner as the repo (ghcr.io/arthur-g/sbox-egg).
 
 on:
   push:
@@ -19,7 +19,7 @@ concurrency:
   cancel-in-progress: true
 
 env:
-  IMAGE: ghcr.io/ouiheberg/sbox-egg
+  IMAGE: ghcr.io/arthur-g/sbox-egg
 
 jobs:
   build:

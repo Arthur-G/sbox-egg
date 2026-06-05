@@ -10,7 +10,7 @@
     "description": "s&box dedicated server on a self-contained Debian + Wine image. SteamCMD runtime auto-update works; no external metrics reporting.",
     "features": [],
     "docker_images": {
-        "ghcr.io/ouiheberg/sbox-egg:latest": "ghcr.io/ouiheberg/sbox-egg:latest"
+        "ghcr.io/arthur-g/sbox-egg:latest": "ghcr.io/arthur-g/sbox-egg:latest"
     },
     "file_denylist": [],
     "startup": "start-sbox",
