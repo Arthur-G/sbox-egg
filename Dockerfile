@@ -29,7 +29,8 @@ RUN dpkg --add-architecture i386 \
  && apt-get install -y --no-install-recommends \
         ca-certificates curl wget gnupg xz-utils tar unzip \
         procps tini locales tzdata \
-        lib32gcc-s1 libgcc-s1 libfreetype6 libfreetype6:i386 \
+        lib32gcc-s1 libgcc-s1 libstdc++6 libstdc++6:i386 \
+        libfreetype6 libfreetype6:i386 \
  && sed -i 's/# en_US.UTF-8/en_US.UTF-8/' /etc/locale.gen && locale-gen \
  && rm -rf /var/lib/apt/lists/*
 

@@ -163,8 +163,35 @@ run_steamcmd_with_timeout() {
 # =============================================================================
 # UPDATE
 # =============================================================================
+dump_steamcmd_stderr() {
+    # SteamCMD redirects its real errors to Steam/logs/stderr.txt, which never
+    # reaches the panel console. Surface the tail of it so failures (e.g. a
+    # missing 32-bit library: "error while loading shared libraries") are visible.
+    local stderr_log="${CONTAINER_HOME}/Steam/logs/stderr.txt"
+    if [ -f "${stderr_log}" ]; then
+        log_warn "---- SteamCMD stderr.txt (tail) ----"
+        tail -n 30 "${stderr_log}" >&2 || true
+        log_warn "---- end SteamCMD stderr.txt ----"
+    else
+        log_warn "no SteamCMD stderr.txt at ${stderr_log}"
+    fi
+}
+
+clear_steam_appmanifest() {
+    # SteamCMD persists StateFlags=6/UpdateResult=6 into appmanifest_<appid>.acf
+    # when an update is interrupted, then reads that stale failure state on the
+    # next run and aborts instantly without downloading (a long-standing bug).
+    # Removing the manifest forces a clean update; game files in steamapps/common
+    # are untouched and are re-validated.
+    local manifest="${SBOX_INSTALL_DIR}/steamapps/appmanifest_${SBOX_APP_ID}.acf"
+    if [ -f "${manifest}" ]; then
+        log_info "removing stale Steam app manifest ${manifest}"
+        rm -f "${manifest}"
+    fi
+}
+
 update_sbox() {
-    local -a steam_args steam_args_retry probe_args
+    local -a steam_args probe_args
     local force_platform="windows"
     local steamcmd_status=0
 
@@ -184,9 +211,7 @@ update_sbox() {
     steam_args+=( +force_install_dir "${SBOX_INSTALL_DIR}" +login anonymous +app_update "${SBOX_APP_ID}" )
     [ -n "${SBOX_BRANCH}" ] && steam_args+=( -beta "${SBOX_BRANCH}" )
 
-    steam_args_retry=("${steam_args[@]}")
     steam_args+=( validate +quit )
-    steam_args_retry+=( +quit )
 
     # Warm-up run: this lets SteamCMD self-update if a newer client exists. The
     # very invocation that performs a self-update re-execs and exits non-zero,
@@ -207,15 +232,19 @@ update_sbox() {
     steamcmd_status=${PIPESTATUS[0]}
     set -e
     if [ "${steamcmd_status}" -ne 0 ]; then
-        if grep -q "Missing configuration" "${UPDATE_LOG}"; then
-            log_warn "missing configuration reported; retrying once without validate"
-            set +e
-            run_steamcmd_with_timeout "${SBOX_STEAMCMD_TIMEOUT}" "${steam_args_retry[@]}" 2>&1 | tee -a "${UPDATE_LOG}"
-            steamcmd_status=${PIPESTATUS[0]}
-            set -e
-        fi
-        if [ "${steamcmd_status}" -eq 0 ]; then log_info "SteamCMD retry succeeded"; return 0; fi
-        log_warn "SteamCMD update failed (status ${steamcmd_status})"
+        # A failed/interrupted update leaves a poisoned appmanifest that makes the
+        # next run abort instantly with no download. Clear it and retry once with a
+        # full validate so SteamCMD rebuilds clean state.
+        log_warn "SteamCMD update failed (status ${steamcmd_status}); clearing app manifest and retrying once"
+        dump_steamcmd_stderr
+        clear_steam_appmanifest
+        set +e
+        run_steamcmd_with_timeout "${SBOX_STEAMCMD_TIMEOUT}" "${steam_args[@]}" 2>&1 | tee -a "${UPDATE_LOG}"
+        steamcmd_status=${PIPESTATUS[0]}
+        set -e
+        if [ "${steamcmd_status}" -eq 0 ]; then log_info "SteamCMD retry succeeded after manifest clear"; return 0; fi
+        log_warn "SteamCMD update still failing (status ${steamcmd_status})"
+        dump_steamcmd_stderr
         [ "${steamcmd_status}" -eq 124 ] && log_warn "update timed out after ${SBOX_STEAMCMD_TIMEOUT}s"
         if [ -f "${SBOX_SERVER_EXE}" ]; then
             log_warn "continuing with existing server files (${SBOX_SERVER_EXE} exists)"
