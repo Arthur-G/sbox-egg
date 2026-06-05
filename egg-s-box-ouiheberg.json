@@ -1,0 +1,172 @@
+{
+    "_comment": "OuiHeberg s&box egg — self-contained Debian/Wine image, no third-party telemetry.",
+    "meta": {
+        "version": "PTDL_v2",
+        "update_url": null
+    },
+    "exported_at": "2026-06-05T17:30:00+02:00",
+    "name": "s&box Game Server (OuiHeberg)",
+    "author": "noc@ouiheberg.com",
+    "description": "s&box dedicated server on a self-contained Debian + Wine image. SteamCMD runtime auto-update works; no external metrics reporting.",
+    "features": [],
+    "docker_images": {
+        "ghcr.io/ouiheberg/sbox-egg:latest": "ghcr.io/ouiheberg/sbox-egg:latest"
+    },
+    "file_denylist": [],
+    "startup": "start-sbox",
+    "config": {
+        "files": "{}",
+        "startup": "{\r\n    \"done\": \"Loading game|Server started\"\r\n}",
+        "logs": "{\r\n    \"custom\": false,\r\n    \"location\": \"logs/*.log\"\r\n}",
+        "stop": "^C"
+    },
+    "scripts": {
+        "installation": {
+            "script": "#!/bin/bash\n# Runtime image downloads/validates the engine on first boot via SteamCMD\n# (SBOX_AUTO_UPDATE=1). Nothing to fetch here — just seed the dirs.\nmkdir -p /mnt/server/sbox /mnt/server/projects /mnt/server/logs\necho \"[install] s&box server directory seeded. Engine downloads on first boot.\"\n",
+            "container": "debian:bookworm-slim",
+            "entrypoint": "bash"
+        }
+    },
+    "variables": [
+        {
+            "name": "Game",
+            "description": "Game package identifier, typically org.package (for example: facepunch.walker).",
+            "env_variable": "GAME",
+            "default_value": "facepunch.sandbox",
+            "user_viewable": true,
+            "user_editable": true,
+            "rules": "nullable|string|max:64",
+            "field_type": "text"
+        },
+        {
+            "name": "Server Name",
+            "description": "Public server name shown in the s&box server browser and listings.",
+            "env_variable": "SERVER_NAME",
+            "default_value": "OuiHeberg Sandbox Server",
+            "user_viewable": true,
+            "user_editable": true,
+            "rules": "nullable|string|max:128",
+            "field_type": "text"
+        },
+        {
+            "name": "Map",
+            "description": "Optional map/package identifier loaded after +game.",
+            "env_variable": "MAP",
+            "default_value": "",
+            "user_viewable": true,
+            "user_editable": true,
+            "rules": "nullable|string|max:128",
+            "field_type": "text"
+        },
+        {
+            "name": "Local Project (.sbproj)",
+            "description": "Optional local .sbproj target for +game. File must exist under /home/container/projects/; enter only relative folder/file (for example: richman/richman.sbproj).",
+            "env_variable": "SBOX_PROJECT",
+            "default_value": "",
+            "user_viewable": true,
+            "user_editable": true,
+            "rules": "nullable|string|max:255",
+            "field_type": "text"
+        },
+        {
+            "name": "Extra Args",
+            "description": "Optional extra arguments. Use with caution.",
+            "env_variable": "SBOX_EXTRA_ARGS",
+            "default_value": "",
+            "user_viewable": true,
+            "user_editable": true,
+            "rules": "nullable|string|max:512",
+            "field_type": "text"
+        },
+        {
+            "name": "Max Players",
+            "description": "Maximum number of players allowed on the server. (Depending on the game mode, this may cause issues if set too high)",
+            "env_variable": "MAX_PLAYERS",
+            "default_value": "",
+            "user_viewable": true,
+            "user_editable": true,
+            "rules": "nullable|numeric|between:1,256",
+            "field_type": "text"
+        },
+        {
+            "name": "Auto Update",
+            "description": "Run a SteamCMD update/validate on every container boot (1=enabled, 0=disabled). On this image the runtime SteamCMD works, so 1 is fine and keeps the engine current. First boot always downloads the engine regardless of this value.",
+            "env_variable": "SBOX_AUTO_UPDATE",
+            "default_value": "1",
+            "user_viewable": true,
+            "user_editable": true,
+            "rules": "required|in:0,1",
+            "field_type": "text"
+        },
+        {
+            "name": "Query Port",
+            "description": "Server query port for Direct Connect. (Experimental)",
+            "env_variable": "QUERY_PORT",
+            "default_value": "",
+            "user_viewable": true,
+            "user_editable": true,
+            "rules": "nullable|numeric|between:1024,65535",
+            "field_type": "text"
+        },
+        {
+            "name": "Direct Connect (No Steam Relay)",
+            "description": "EXPERIMENTAL: Allow direct connection via IP+Port instead of Steam relay.",
+            "env_variable": "ENABLE_DIRECT_CONNECT",
+            "default_value": "0",
+            "user_viewable": true,
+            "user_editable": true,
+            "rules": "required|in:0,1",
+            "field_type": "text"
+        },
+        {
+            "name": "Game Server Token",
+            "description": "Optional Steam game server token passed as +net_game_server_token, get your token here: https://steamcommunity.com/dev/managegameservers",
+            "env_variable": "TOKEN",
+            "default_value": "",
+            "user_viewable": true,
+            "user_editable": true,
+            "rules": "nullable|alpha_num|min:24|max:64",
+            "field_type": "text"
+        },
+        {
+            "name": "Branch",
+            "description": "Optional Steam beta branch name used for updates (for example: staging).",
+            "env_variable": "SBOX_BRANCH",
+            "default_value": "",
+            "user_viewable": true,
+            "user_editable": true,
+            "rules": "nullable|string|max:64",
+            "field_type": "text"
+        },
+        {
+            "name": "SteamCMD Timeout (seconds)",
+            "description": "Maximum time to wait for each SteamCMD probe/update call before continuing startup (0 disables timeout).",
+            "env_variable": "SBOX_STEAMCMD_TIMEOUT",
+            "default_value": "600",
+            "user_viewable": false,
+            "user_editable": false,
+            "rules": "required|numeric|between:0,7200",
+            "field_type": "text"
+        },
+        {
+            "name": "Runtime Mode",
+            "description": "Select runtime backend: wine (recommended), proton (experimental), or linux (reserved).",
+            "env_variable": "RUNTIME_MODE",
+            "default_value": "wine",
+            "user_viewable": false,
+            "user_editable": false,
+            "rules": "required|in:wine,proton,linux",
+            "field_type": "text"
+        },
+        {
+            "name": "SteamCMD Extra Args",
+            "description": "Optional extra arguments passed to SteamCMD on update.",
+            "env_variable": "STEAMCMD_EXTRA_ARGS",
+            "default_value": "",
+            "user_viewable": false,
+            "user_editable": false,
+            "rules": "nullable|string|max:256",
+            "field_type": "text"
+        }
+    ]
+}

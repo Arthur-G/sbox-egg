@@ -1,0 +1,15 @@
+# Local artefacts / runtime
+*.log
+logs/
+.env
+.env.*
+
+# Build / OS cruft
+*.tmp
+*.swp
+.DS_Store
+Thumbs.db
+
+# Local test volumes (e.g. docker-compose mounts)
+data/
+volume/
