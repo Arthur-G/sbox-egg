@@ -61,10 +61,14 @@ RUN curl -sSL -o /tmp/dotnet.zip \
  && rm -f /tmp/dotnet.zip
 
 # --- Pterodactyl container user ---------------------------------------------
-# SteamCMD self-updates into ${STEAMCMD_DIR} at runtime, so the dir must be
-# owned by the user we run as (otherwise: "linux32/steamcmd: Permission denied").
+# Wings ignores the image USER and runs the container under its own UID/GID
+# (often 988), which won't match the build-time `container` UID. SteamCMD
+# self-updates by rewriting its own dir at runtime, so make ${STEAMCMD_DIR}
+# world-writable — otherwise the self-update fails with
+# "Download of package (steamcmd_public_all) failed after 0 bytes (0)".
+# It's an ephemeral in-image dir, so 0777 here is harmless.
 RUN useradd -m -d /home/container -s /bin/bash container \
- && chown -R container:container "${STEAMCMD_DIR}"
+ && chmod -R 0777 "${STEAMCMD_DIR}"
 ENV USER=container HOME=/home/container
 
 # --- scripts ----------------------------------------------------------------
