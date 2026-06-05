@@ -188,20 +188,17 @@ update_sbox() {
     steam_args+=( validate +quit )
     steam_args_retry+=( +quit )
 
+    # Warm-up run: this lets SteamCMD self-update if a newer client exists. The
+    # very invocation that performs a self-update re-execs and exits non-zero,
+    # so its status is NOT a reliable health signal — don't abort on it. The
+    # real app_update below is the source of truth (it has its own fallback).
     set +e
     run_steamcmd_with_timeout "${SBOX_STEAMCMD_TIMEOUT}" "${probe_args[@]}" 2>&1 | tee -a "${UPDATE_LOG}"
     steamcmd_status=${PIPESTATUS[0]}
     set -e
     if [ "${steamcmd_status}" -ne 0 ]; then
-        log_warn "SteamCMD runtime probe failed; cannot run auto-update"
-        [ "${steamcmd_status}" -eq 124 ] && log_warn "probe timed out after ${SBOX_STEAMCMD_TIMEOUT}s"
-        log_warn "see ${UPDATE_LOG} for details"
-        if [ ! -f "${SBOX_SERVER_EXE}" ]; then
-            log_error "${SBOX_SERVER_EXE} was not found and SteamCMD is unavailable"
-            return 1
-        fi
-        log_warn "continuing with existing server files (${SBOX_SERVER_EXE} exists)"
-        return 0
+        log_warn "SteamCMD warm-up returned ${steamcmd_status} (commonly a self-update re-exec); proceeding to app_update"
+        [ "${steamcmd_status}" -eq 124 ] && log_warn "warm-up timed out after ${SBOX_STEAMCMD_TIMEOUT}s"
     fi
 
     log_info "running SteamCMD app_update ${SBOX_APP_ID} (platform=${force_platform}${SBOX_BRANCH:+, branch=${SBOX_BRANCH}})"
